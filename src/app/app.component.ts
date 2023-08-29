@@ -10,7 +10,7 @@ const URL = `https://jsonplaceholder.typicode.com/todos/1`;
     <button (click)="cancel$.next()">Cancel Load</button>
 
     <div>
-      {{ todoTitle | async }}
+      {{ todoTitle$ | async }}
     </div>
   </div>`,
 })
@@ -18,7 +18,8 @@ export class AppComponent {
   click$ = new Subject<void>();
   cancel$ = new Subject<void>();
 
-  todoTitle = concat(
+  // Exercise: Create the todoTitle$ observable (Everything else would be already setup)
+  todoTitle$ = concat(
     of('Waiting for click...'),
 
     this.click$.pipe(
