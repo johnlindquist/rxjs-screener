@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Subject, concat, merge, of, race } from 'rxjs';
-import { delay, map, switchMap, takeUntil } from 'rxjs/operators';
+import { catchError, delay, map, switchMap, takeUntil } from 'rxjs/operators';
 
 const URL = `https://jsonplaceholder.typicode.com/todos/1`;
 @Component({
@@ -19,6 +19,11 @@ export class AppComponent {
   click$ = new Subject<void>();
   cancel$ = new Subject<void>();
 
+  waitingMessage = 'Waiting for click...';
+  loadingMessage = 'Loading...';
+  cancelledMessage = 'Cancelled!';
+  errorMessage = 'Error loading :/';
+
   // Exercise: Create the todo$ observable (Everything else would be already setup)
   /**
    * 1. Display a initial text: "Waiting for click..."
@@ -26,26 +31,28 @@ export class AppComponent {
    * 3. The stream then waits for 1 second before fetching the todo
    * 4. If the user clicks "cancel" before the todo is loaded, prevent the load and display a "Cancelled!" message
    * 5. "Cancel" should only be active when the todo is loading
+   * 6. Handle errors gracefully by displaying "Error loading :/" when the fetch fails
    */
 
   todo$ = concat(
-    of('Waiting for click...'),
+    of(this.waitingMessage),
     this.click$.pipe(
-      switchMap(() => {
-        return concat(
-          of('Loading...'),
+      switchMap(() =>
+        concat(
+          of(this.loadingMessage),
           merge(
             of(URL).pipe(
               delay(1000),
               switchMap((url) => fetch(url)),
               switchMap((response) => response.json()),
               map((json) => json.title),
+              catchError(() => of(this.errorMessage)),
               takeUntil(this.cancel$)
             ),
-            this.cancel$.pipe(map(() => 'Cancelled!'))
+            this.cancel$.pipe(map(() => this.cancelledMessage))
           )
-        );
-      })
+        )
+      )
     )
   );
 }
