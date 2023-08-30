@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Subject, concat, merge, of } from 'rxjs';
+import { Subject, concat, merge, of, race } from 'rxjs';
 import { delay, map, switchMap, takeUntil } from 'rxjs/operators';
 
 const URL = `https://jsonplaceholder.typicode.com/todos/1`;
@@ -25,26 +25,27 @@ export class AppComponent {
    * 2. Clicking the "Load Todo" changes todo to "Loading..."
    * 3. The stream then waits for 1 second before fetching the todo
    * 4. If the user clicks "cancel" before the todo is loaded, prevent the load and display a "Cancelled!" message
+   * 5. "Cancel" should only be active when the todo is loading
    */
 
   todo$ = concat(
     of('Waiting for click...'),
-
     this.click$.pipe(
-      switchMap(() =>
-        merge(
-          concat(
-            of('Loading...'),
+      switchMap(() => {
+        return concat(
+          of('Loading...'),
+          merge(
             of(URL).pipe(
               delay(1000),
               switchMap((url) => fetch(url)),
               switchMap((response) => response.json()),
-              map((json) => json.title)
-            )
-          ).pipe(takeUntil(this.cancel$)),
-          this.cancel$.pipe(map(() => 'Cancelled!'))
-        )
-      )
+              map((json) => json.title),
+              takeUntil(this.cancel$)
+            ),
+            this.cancel$.pipe(map(() => 'Cancelled!'))
+          )
+        );
+      })
     )
   );
 }
